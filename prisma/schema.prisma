@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. AdminUser
+model AdminUser {
+  id        Int      @id @default(autoincrement()) // ID_Admin
+  name      String
+  email     String   @unique // Agregado para Login (RF-1)
+  password  String
+  createdAt DateTime @default(now())
+}
+
+// 2. Category
+model Category {
+  id       Int       @id @default(autoincrement()) // ID_Category
+  name     String
+  products Product[] // Relación: Una categoría tiene muchos productos
+}
+
+// 3. Product
+model Product {
+  id          Int         @id @default(autoincrement()) // ID_Product
+  name        String
+  description String
+  price       Decimal     @db.Decimal(10, 2) // Price (Usamos Decimal para dinero)
+  imageUrl    String      // Image
+  isFeatured  Boolean     @default(false) // Feature
+  isActive    Boolean     @default(true)  // Active
+  
+  // Relación con Category
+  categoryId  Int
+  category    Category    @relation(fields: [categoryId], references: [id])
+  
+  // Relación con OrderItem
+  orderItems  OrderItem[]
+}
+
+// 4. News
+model News {
+  id        Int      @id @default(autoincrement()) // ID_News
+  title     String
+  content   String   @db.Text // Content (Text permite textos largos)
+  date      DateTime @default(now()) // Date
+  isActive  Boolean  @default(true)  // Active
+}
+
+// 5. Order
+model Order {
+  id           Int         @id @default(autoincrement()) // ID_Order
+  ticketNumber String      @unique // Ticket_Number
+  
+  // Info_User (Desglosado para cumplir RF-8)
+  guestName    String      
+  guestContact String      
+  guestAddress String      
+
+  totalAmount  Decimal     @db.Decimal(10, 2) // Total_Amount
+  status       String      @default("En espera") // Status
+  createdAt    DateTime    @default(now()) // Date_Create
+
+  // Relación: Una orden tiene muchos items
+  items        OrderItem[]
+}
+
+// 6. Order Item (Tabla Intermedia)
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  
+  // Relación con Order (ID_Order)
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  // Relación con Product (ID_Product)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+
+  // Campos adicionales vitales
+  quantity  Int      // Cantidad solicitada
+  
+  // Snapshot (RF-19): Guardamos estos datos aquí por si el producto original cambia
+  price     Decimal  @db.Decimal(10, 2) 
+}
