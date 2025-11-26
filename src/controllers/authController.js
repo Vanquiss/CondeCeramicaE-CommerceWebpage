@@ -8,7 +8,7 @@ const generateToken = (user) => {
     const payload = {
         id: user.id,
         email: user.email,
-        rol: user.rol 
+        role: user.role
     };
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION });
 };
@@ -29,7 +29,7 @@ const login = async (req, res) => {
         const user = await userModel.findUserByEmail(email);
 
         // 2. Verificar credenciales
-        if (!user || !(await bcrypt.compare(password, user.contraseña))) {
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ message: "Credenciales inválidas." });
         }
 

@@ -1,47 +1,55 @@
-// src/server.js
-require('dotenv').config(); 
+require('dotenv').config(); // Cargar variables de entorno
 const express = require('express');
-const db = require('./db/db'); 
+const db = require('./db/db'); // Importar conexión a DB
+const path = require('path');
+
+// --- IMPORTACIÓN DE RUTAS ---
+const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('./routes/productRoutes');
+
 const app = express();
-
-// Importar rutas
-const authRoutes = require('./routes/authRoutes'); // <--- AÑADIR
-
 const PORT = process.env.PORT || 3000;
 
+// --- MIDDLEWARES GLOBALES ---
+// Permite que el servidor entienda peticiones con cuerpo JSON (req.body)
 app.use(express.json());
-// ------------------------------------------------------------------
-// 1. RUTA DE PRUEBA Y VERIFICACIÓN DE CONEXIÓN A DB
-// ------------------------------------------------------------------
+
+//CONFIGURAR CARPETA PÚBLICA (Agrega esta línea)
+// Esto dice: "Cuando alguien pida una URL que empiece con /uploads, busca el archivo en la carpeta public/uploads"
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
+// --- DEFINICIÓN DE RUTAS (ENDPOINTS) ---
+
+// 1. Rutas de Autenticación (RF-1)
+// Prefijo: http://localhost:3000/api/auth
+app.use('/api/auth', authRoutes);
+
+// 2. Rutas de Productos (RF-4, RF-11)
+// Prefijo: http://localhost:3000/api/products
+app.use('/api/products', productRoutes);
+
+// 3. Ruta de Prueba de Salud (Health Check)
+// Acceso: http://localhost:3000/
 app.get('/', async (req, res) => {
   try {
-    // Prueba de conexión: consulta la fecha/hora actual del servidor DB
     const result = await db.query('SELECT NOW()');
-    
-    // Si la consulta es exitosa, la DB está conectada
     res.status(200).json({
-      message: 'Servidor Express funcionando.',
-      database_status: 'Conexión a PostgreSQL OK.',
-      database_time: result.rows[0].now,
+      message: '✅ Servidor Express funcionando correctamente.',
+      database_status: '✅ Conexión a PostgreSQL exitosa.',
+      server_time: result.rows[0].now,
     });
   } catch (error) {
-    console.error('Error al consultar la DB:', error.message);
+    console.error('❌ Error de conexión a la BD:', error.message);
     res.status(500).json({
-      message: 'Servidor Express funcionando.',
-      database_status: 'Error en la conexión a PostgreSQL.',
+      message: '⚠️ Servidor funcionando, pero sin base de datos.',
       error: error.message,
     });
   }
 });
 
-// ------------------------------------------------------------------
-// 2. RUTAS DE LA APLICACIÓN (Auth, Productos, etc.)
-//    Aquí conectarías las rutas de tu proyecto (RF-1 a RF-20)
-// ------------------------------------------------------------------
-app.use('/api/auth', authRoutes);
-// ------------------------------------------------------------------
-// 3. INICIO DEL SERVIDOR
-// ------------------------------------------------------------------
+// --- INICIO DEL SERVIDOR ---
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`📡 Rutas de Auth activas en /api/auth`);
+  console.log(`📦 Rutas de Productos activas en /api/products`);
 });
